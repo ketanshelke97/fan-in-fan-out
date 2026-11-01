@@ -138,11 +138,19 @@ az functionapp config appsettings set \
     "ENABLE_MOCK_EXTRACTION=false" \
     "APPLICATIONINSIGHTS_CONNECTION_STRING=$AI_CONN" -o table
 
-# 7. Static Web App (Free)
+# 7. Static Web App (Free - always in eastasia as SWA is edge-hosted)
 az staticwebapp create \
   --name "$SWA_NAME" \
   --resource-group "$RG" \
-  --location "$LOCATION" \
+  --location "eastasia" \
   --sku Free -o table
 
-echo "Deployment complete! Function App: https://${FUNC_APP_NAME}.azurewebsites.net"
+echo "=================================================================="
+echo "  AZURE DEPLOYMENT COMPLETED SUCCESSFULLY!"
+echo "=================================================================="
+echo "  Function App URL     : https://${FUNC_APP_NAME}.azurewebsites.net"
+echo "  Document Intelligence: ${DOC_ENDPOINT}"
+echo "  Cosmos DB Account    : ${COSMOS_NAME} (Serverless in ${COSMOS_LOC})"
+echo "  Storage Account      : ${STORAGE_NAME}"
+echo "  Static Web App       : https://${SWA_NAME}.azurestaticapps.net"
+echo "=================================================================="

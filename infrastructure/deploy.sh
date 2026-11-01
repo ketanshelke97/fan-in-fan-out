@@ -65,13 +65,24 @@ az monitor app-insights component create \
 
 AI_CONN=$(az monitor app-insights component show --app "$APPINSIGHTS_NAME" --resource-group "$RG" --query "connectionString" -o tsv || echo "")
 
-# 4. Cosmos DB (Serverless)
-az cosmosdb create \
+# 4. Cosmos DB (Serverless) - with automatic fallback if region capacity is full
+echo "Creating Azure Cosmos DB in Serverless mode..."
+COSMOS_LOC="$LOCATION"
+if ! az cosmosdb create \
   --name "$COSMOS_NAME" \
   --resource-group "$RG" \
   --capabilities EnableServerless \
   --default-consistency-level Session \
-  --locations regionName="$LOCATION" failoverPriority=0 -o table
+  --locations regionName="$COSMOS_LOC" failoverPriority=0 -o table; then
+    echo "Notice: High demand in $LOCATION for Cosmos DB. Automatically falling back to backup region: koreacentral..."
+    COSMOS_LOC="koreacentral"
+    az cosmosdb create \
+      --name "$COSMOS_NAME" \
+      --resource-group "$RG" \
+      --capabilities EnableServerless \
+      --default-consistency-level Session \
+      --locations regionName="$COSMOS_LOC" failoverPriority=0 -o table
+fi
 
 az cosmosdb sql database create --account-name "$COSMOS_NAME" --resource-group "$RG" --name "DocumentIntelligenceDB" -o table
 az cosmosdb sql container create --account-name "$COSMOS_NAME" --resource-group "$RG" --database-name "DocumentIntelligenceDB" --name "Dossiers" --partition-key-path "/batch_id" -o table
@@ -79,13 +90,24 @@ az cosmosdb sql container create --account-name "$COSMOS_NAME" --resource-group 
 COSMOS_CONN=$(az cosmosdb keys list --name "$COSMOS_NAME" --resource-group "$RG" --type connection-strings --query "connectionStrings[0].connectionString" -o tsv)
 
 # 5. AI Document Intelligence F0
-az cognitiveservices account create \
+DOC_LOC="$LOCATION"
+if ! az cognitiveservices account create \
   --name "$AI_DOC_NAME" \
   --resource-group "$RG" \
   --kind FormRecognizer \
   --sku F0 \
-  --location "$LOCATION" \
-  --yes -o table
+  --location "$DOC_LOC" \
+  --yes -o table; then
+    echo "Notice: High demand in $LOCATION for AI Document Intelligence. Falling back to koreacentral..."
+    DOC_LOC="koreacentral"
+    az cognitiveservices account create \
+      --name "$AI_DOC_NAME" \
+      --resource-group "$RG" \
+      --kind FormRecognizer \
+      --sku F0 \
+      --location "$DOC_LOC" \
+      --yes -o table
+fi
 
 DOC_ENDPOINT=$(az cognitiveservices account show --name "$AI_DOC_NAME" --resource-group "$RG" --query "properties.endpoint" -o tsv)
 DOC_KEY=$(az cognitiveservices account keys list --name "$AI_DOC_NAME" --resource-group "$RG" --query "key1" -o tsv)

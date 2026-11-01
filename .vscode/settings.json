@@ -1,0 +1,8 @@
+{
+  "azureFunctions.deploySubpath": "backend",
+  "azureFunctions.projectLanguage": "Python",
+  "azureFunctions.projectRuntime": "~4",
+  "azureFunctions.pythonVenv": "backend/.venv",
+  "azureFunctions.projectSubpath": "backend",
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe"
+}

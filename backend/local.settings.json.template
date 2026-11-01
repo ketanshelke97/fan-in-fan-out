@@ -1,0 +1,18 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<your-doc-intel-eastasia>.cognitiveservices.azure.com/",
+    "DOCUMENT_INTELLIGENCE_KEY": "<your-f0-key>",
+    "COSMOS_CONNECTION_STRING": "AccountEndpoint=https://<your-cosmos-eastasia>.documents.azure.com:443/;AccountKey=...;",
+    "STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "RAW_CONTAINER_NAME": "incoming-batches",
+    "OUTPUT_CONTAINER_NAME": "processed-dossiers",
+    "ENABLE_MOCK_EXTRACTION": "true"
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
+  }
+}

@@ -63,7 +63,7 @@ export interface ConsolidatedDossier {
   indexed_at: string;
 }
 
-const API_BASE = ''; // Proxy via vite or relative on Azure Static Web App
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://func-fanin-3718.azurewebsites.net';
 
 export async function requestUploadSas(fileNames: string[], batchId: string) {
   const resp = await fetch(`${API_BASE}/api/batches/sas-tokens`, {

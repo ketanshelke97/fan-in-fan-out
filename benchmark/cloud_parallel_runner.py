@@ -59,7 +59,7 @@ def run_cloud_benchmark(api_base: str, num_docs: int = 25):
     starter_payload = resp.json()
     status_uri = starter_payload.get("statusQueryGetUri")
     instance_id = starter_payload.get("id")
-    print(f"  ✓ Orchestration Started!")
+    print(f"  [OK] Orchestration Started!")
     print(f"  Instance ID: {instance_id}")
     print(f"  Status Query URI: {status_uri}")
 

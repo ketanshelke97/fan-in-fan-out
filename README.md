@@ -142,3 +142,10 @@ chmod +x deploy.sh
    - Show professors the active server container count jumping from 1 $\to$ 20+ servers in real time, and dropping back to 0 idle servers after Fan-In.
 4. **Theoretical Justification:**
    - Explain **Amdahl's Law** ($S = \frac{1}{(1-P) + \frac{P}{N}}$), showing that isolating the parallelizable document processing fraction ($P \approx 0.95$) achieves near-linear horizontal scaling.
+
+---
+
+## 👥 Team Collaboration & Contributing
+
+Working on the frontend? Check out the dedicated [Frontend Contributor Guide](FRONTEND_CONTRIBUTOR_GUIDE.md) for quickstart instructions (zero cloud installation needed), component architecture, and high-impact UI feature ideas!
+

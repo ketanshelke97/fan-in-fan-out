@@ -19,6 +19,14 @@ FUNC_APP_NAME="func-fanin-$SUFFIX"
 APPINSIGHTS_NAME="appi-fanin-$SUFFIX"
 SWA_NAME="swa-fanin-$SUFFIX"
 
+# Register core Azure resource providers
+echo "Ensuring required Azure Resource Providers are registered..."
+az provider register --namespace Microsoft.OperationalInsights
+az provider register --namespace Microsoft.Insights
+az provider register --namespace Microsoft.CognitiveServices
+az provider register --namespace Microsoft.DocumentDB
+az provider register --namespace Microsoft.Web
+
 # 1. Resource Group
 az group create --name "$RG" --location "$LOCATION" -o table
 
@@ -37,14 +45,25 @@ STORAGE_CONN=$(az storage account show-connection-string --name "$STORAGE_NAME" 
 az storage container create --name "incoming-batches" --account-name "$STORAGE_NAME" --account-key "$STORAGE_KEY" -o table
 az storage container create --name "processed-dossiers" --account-name "$STORAGE_NAME" --account-key "$STORAGE_KEY" -o table
 
-# 3. Application Insights
+# 3. Log Analytics Workspace & Application Insights (Modern Workspace Mode)
+LAW_NAME="law-$SUFFIX"
+az monitor log-analytics workspace create \
+  --resource-group "$RG" \
+  --workspace-name "$LAW_NAME" \
+  --location "$LOCATION" -o table || true
+
 az monitor app-insights component create \
+  --app "$APPINSIGHTS_NAME" \
+  --location "$LOCATION" \
+  --resource-group "$RG" \
+  --workspace "$LAW_NAME" \
+  --application-type web -o table || az monitor app-insights component create \
   --app "$APPINSIGHTS_NAME" \
   --location "$LOCATION" \
   --resource-group "$RG" \
   --application-type web -o table
 
-AI_CONN=$(az monitor app-insights component show --app "$APPINSIGHTS_NAME" --resource-group "$RG" --query "connectionString" -o tsv)
+AI_CONN=$(az monitor app-insights component show --app "$APPINSIGHTS_NAME" --resource-group "$RG" --query "connectionString" -o tsv || echo "")
 
 # 4. Cosmos DB (Serverless)
 az cosmosdb create \

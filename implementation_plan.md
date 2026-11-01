@@ -483,46 +483,54 @@ To clearly demonstrate cloud computing principles to evaluators during the viva:
 
 ---
 
-## Implementation Progress & Phased Execution Roadmap
+## Implementation Roadmap & Milestone Delivery Status
 
-| Phase | Description | Status | Deliverables Completed |
-| :--- | :--- | :---: | :--- |
-| **Phase 1** | Local Monorepo & Emulation Environment | ✅ **COMPLETED** | Monorepo layout, `.vscode` settings/tasks/launch, Python 3.10 venv, 25 test PDFs generated, locked `requirements.txt`. |
-| **Phase 2** | Budget-Guarded Azure Infrastructure (IaC) | ✅ **COMPLETED** | Automated `deploy.ps1`, `deploy.sh`, and `deploy.bicep` targeting `eastasia` with `--capabilities EnableServerless` and `F0` SKU guards. |
-| **Phase 3** | Durable Functions Orchestrator & Workers | ✅ **COMPLETED** | `backend/function_app.py` with the 4 Cloud Functions (Starter, Orchestrator, Worker, Aggregator) in Python v2 model. |
-| **Phase 4** | Cognitive AI Extraction & Cosmos DB Storage | ✅ **COMPLETED** | `ai_extractor.py`, `mock_extractor.py`, and `cosmos_client.py` with offline fallback & 0 compiler errors. |
-| **Phase 5** | React/Vite Frontend & SWA Dashboard | ✅ **COMPLETED** | Dropzone, Concurrency Map, Benchmark Card, Dossier Viewer, `staticwebapp.config.json`, verified `npm run build` (0 errors). |
-| **Phase 6** | Local Benchmark Script & Viva Deck | ✅ **COMPLETED** | `local_sequential_runner.py` (tested, 85% CPU saturation), `cloud_parallel_runner.py`, and academic defense guide in `README.md`. |
+### 🟢 Phase 1: Local Monorepo & Emulation Environment
+* **Status:** Verified & Operational
+* **Deliverables:**
+  * Standardized monorepo architecture (`.vscode/`, `backend/`, `frontend/`, `infrastructure/`, `benchmark/`).
+  * Python 3.10 isolated runtime configured in `backend/.venv` with locked dependencies.
+  * Azure Functions developer tooling (`settings.json`, `tasks.json`, `launch.json`).
+  * Synthetic test corpus generator producing 25 multi-page financial & legal PDFs (`generate_sample_docs.py`).
+  * Baseline single-machine sequential benchmark runner (`local_sequential_runner.py`) proving single-core saturation.
 
----
+### 🟢 Phase 2: Budget-Guarded Azure Infrastructure (IaC)
+* **Status:** Provisioning Scripts Ready (Target Region: `eastasia`)
+* **Deliverables:**
+  * Automated deployment scripts in PowerShell (`deploy.ps1`) and Bash (`deploy.sh`).
+  * Declarative Infrastructure as Code template (`deploy.bicep`) for all 7 Azure services.
+  * Strict cost safeguards: Cosmos DB explicitly configured with `--capabilities EnableServerless`, Document Intelligence on Free `F0` tier, and Function App on Consumption Plan `Y1`.
 
-### Implementation Milestones Checklist
+### 🟢 Phase 3: Serverless Durable Functions Core (Python v2)
+* **Status:** Implemented in `backend/function_app.py`
+* **Deliverables:**
+  * `http_batch_starter`: HTTP starter with SAS token generation and Pydantic validation.
+  * `document_batch_orchestrator`: Stateful fan-out loop across $N$ files with non-blocking `context.task_all` fan-in.
+  * `extract_document_worker`: Concurrent activity worker with dual-mode support (Azure AI + mock stress test).
+  * `consolidate_and_index_dossier`: Aggregator reconciling cross-document findings and computing speedup factors.
 
-- [x] **Project Architecture & Monorepo Initialization**
-  - [x] Root `.gitignore` configured to exclude `.venv`, `node_modules`, `dist`, caches, and emulators.
-  - [x] `.vscode/settings.json`, `.vscode/tasks.json`, `.vscode/launch.json` tuned for Azure Functions Python v2.
-  - [x] Python 3.10 virtual environment created at `backend/.venv` with all dependencies installed.
-- [x] **Sample Corpus & Baseline Benchmarking**
-  - [x] `benchmark/generate_sample_docs.py` generated 25 multi-page sample PDFs with tables and statutes.
-  - [x] `benchmark/local_sequential_runner.py` executed on single CPU core, proving the sequential bottleneck (85% CPU load).
-- [x] **Serverless Durable Functions (Python v2 Model)**
-  - [x] `http_batch_starter`: HTTP starter with SAS token generation and Pydantic validation.
-  - [x] `document_batch_orchestrator`: Fan-Out loop + non-blocking `context.task_all` Fan-In.
-  - [x] `extract_document_worker`: Activity function with dual-mode support (Azure AI Document Intelligence + mock stress test).
-  - [x] `consolidate_and_index_dossier`: Aggregator synthesizing cross-document entities and calculating speedup factors.
-- [x] **Cognitive Extraction & Cosmos DB Persistence**
-  - [x] `backend/shared/models.py` Pydantic contracts.
-  - [x] `backend/shared/ai_extractor.py` handling `AnalyzeDocumentRequest` with URL and byte sources.
-  - [x] `backend/shared/cosmos_client.py` serverless container management with offline file fallback.
-- [x] **Modern Frontend Dashboard (React + Vite)**
-  - [x] Dropzone with drag-and-drop and 1-click 25 benchmark PDF loader.
-  - [x] Real-time Concurrency Map with pulsing worker status indicators.
-  - [x] Comparative Benchmark Card demonstrating Amdahl's Law and local CPU offloading.
-  - [x] Synthesized Dossier Inspector displaying reconciled entities, tables, and speedup factor.
-  - [x] `staticwebapp.config.json` configured for Azure Static Web Apps.
-  - [x] Production bundle verified: `npm run build` passed cleanly.
-- [x] **Automated Azure Resource Provisioning**
-  - [x] `infrastructure/deploy.ps1` (PowerShell) for automated deployment to `eastasia`.
-  - [x] `infrastructure/deploy.sh` (Bash) for Linux/macOS.
-  - [x] `infrastructure/deploy.bicep` Infrastructure-as-Code template.
+### 🟢 Phase 4: Cognitive AI Extraction & Persistence
+* **Status:** Verified & Offline-Resilient
+* **Deliverables:**
+  * `ai_extractor.py`: Azure AI Document Intelligence SDK client wrapper with `AnalyzeDocumentRequest` byte/URL parsing.
+  * `mock_extractor.py`: Local multi-threaded regex & table parser for quota-free 50-file stress demonstrations.
+  * `cosmos_client.py`: Cosmos DB Serverless DAO with safe local storage fallback.
+
+### 🟢 Phase 5: Modern Web Dashboard (React + Vite)
+* **Status:** Built & Verified (`npm run build` passed)
+* **Deliverables:**
+  * React 19 + Vite dashboard with dark glassmorphic design system.
+  * Interactive Batch Dropzone with 1-click 25 benchmark document loader.
+  * Real-time Concurrency Map with live pulsing worker status indicators.
+  * Amdahl's Law Comparative Performance Card.
+  * Synthesized Dossier Explorer with global entity graph and tabular matrix viewer.
+  * Azure Static Web Apps configuration (`staticwebapp.config.json`).
+
+### 🟢 Phase 6: Academic Viva Demonstration Suite
+* **Status:** Ready for Evaluation
+* **Deliverables:**
+  * Single-core baseline test script demonstrating 85%+ CPU saturation.
+  * Remote cloud benchmark trigger script (`cloud_parallel_runner.py`).
+  * Application Insights Live Metrics examiner presentation protocol in `README.md`.
+
 

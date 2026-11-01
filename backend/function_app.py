@@ -41,15 +41,15 @@ except ImportError:
     )
 
 # Initialize the Durable Functions App (Python v2 Model)
-app = my_app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 
 # ==============================================================================
 # FUNCTION 1: HttpOrEventGridStarter (Client Trigger)
 # Validates manifest, creates unique BatchCorrelationID, starts orchestration
 # ==============================================================================
-@my_app.route(route="batches/start", methods=["POST"])
-@my_app.durable_client_input(client_name="client")
+@app.route(route="batches/start", methods=["POST"])
+@app.durable_client_input(client_name="client")
 async def http_batch_starter(req: func.HttpRequest, client: df.DurableOrchestrationClient) -> func.HttpResponse:
     logging.info("[Starter] Received batch processing initiation request.")
     try:
@@ -74,7 +74,7 @@ async def http_batch_starter(req: func.HttpRequest, client: df.DurableOrchestrat
 
 
 # Helper HTTP endpoint: generate SAS upload links for browser dropzone
-@my_app.route(route="batches/sas-tokens", methods=["POST"])
+@app.route(route="batches/sas-tokens", methods=["POST"])
 async def generate_upload_sas(req: func.HttpRequest) -> func.HttpResponse:
     """
     Generates direct-to-blob pre-signed SAS tokens so clients can upload multi-megabyte
@@ -111,7 +111,7 @@ async def generate_upload_sas(req: func.HttpRequest) -> func.HttpResponse:
 # FUNCTION 2: DocumentBatchOrchestrator (Orchestration Trigger)
 # Manages Fan-Out loop over files and Fan-In joint resolution
 # ==============================================================================
-@my_app.orchestration_trigger(context_name="context")
+@app.orchestration_trigger(context_name="context")
 def document_batch_orchestrator(context: df.DurableOrchestrationContext):
     manifest_data = context.get_input()
     files = manifest_data.get("files", [])
@@ -146,7 +146,7 @@ def document_batch_orchestrator(context: df.DurableOrchestrationContext):
 # FUNCTION 3: ExtractDocumentWorker (Activity Trigger)
 # Worker container instance: extracts tables, layout, and entities per PDF
 # ==============================================================================
-@my_app.activity_trigger(input_name="fileEntry")
+@app.activity_trigger(input_name="fileEntry")
 def extract_document_worker(fileEntry: Dict[str, Any]) -> Dict[str, Any]:
     file_name = fileEntry.get("file_name", "document.pdf")
     blob_url = fileEntry.get("blob_url", "")
@@ -197,7 +197,7 @@ def extract_document_worker(fileEntry: Dict[str, Any]) -> Dict[str, Any]:
 # FUNCTION 4: ConsolidateAndIndexDossier (Activity Trigger - Aggregator)
 # Consolidates all document data, computes speedup, writes to Cosmos DB
 # ==============================================================================
-@my_app.activity_trigger(input_name="aggregationPayload")
+@app.activity_trigger(input_name="aggregationPayload")
 def consolidate_and_index_dossier(aggregationPayload: Dict[str, Any]) -> Dict[str, Any]:
     batch_id = aggregationPayload.get("batch_id")
     batch_name = aggregationPayload.get("batch_name")

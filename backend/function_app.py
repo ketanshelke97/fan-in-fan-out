@@ -41,7 +41,7 @@ except ImportError:
     )
 
 # Initialize the Durable Functions App (Python v2 Model)
-my_app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app = my_app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 
 # ==============================================================================

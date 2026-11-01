@@ -4,7 +4,10 @@ from typing import List, Optional
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
-from backend.shared.models import ExtractedEntity, ExtractedTable, WorkerResult
+try:
+    from shared.models import ExtractedEntity, ExtractedTable, WorkerResult
+except ImportError:
+    from backend.shared.models import ExtractedEntity, ExtractedTable, WorkerResult
 
 
 def get_doc_intelligence_client() -> Optional[DocumentIntelligenceClient]:

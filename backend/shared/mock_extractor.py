@@ -3,7 +3,10 @@ import re
 import time
 from typing import List
 from pypdf import PdfReader
-from backend.shared.models import ExtractedEntity, ExtractedTable, WorkerResult
+try:
+    from shared.models import ExtractedEntity, ExtractedTable, WorkerResult
+except ImportError:
+    from backend.shared.models import ExtractedEntity, ExtractedTable, WorkerResult
 
 
 def extract_document_mock(file_bytes: bytes, file_name: str) -> WorkerResult:

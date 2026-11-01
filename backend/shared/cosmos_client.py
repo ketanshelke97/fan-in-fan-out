@@ -3,7 +3,10 @@ import os
 from pathlib import Path
 from typing import Optional
 from azure.cosmos import CosmosClient, PartitionKey
-from backend.shared.models import ConsolidatedDossier
+try:
+    from shared.models import ConsolidatedDossier
+except ImportError:
+    from backend.shared.models import ConsolidatedDossier
 
 
 DATABASE_NAME = "DocumentIntelligenceDB"

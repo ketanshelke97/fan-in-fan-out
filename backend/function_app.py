@@ -7,17 +7,38 @@ from typing import Any, Dict, List
 import azure.durable_functions as df
 import azure.functions as func
 
-from backend.shared.ai_extractor import extract_document_ai
-from backend.shared.cosmos_client import persist_dossier
-from backend.shared.mock_extractor import extract_document_mock
-from backend.shared.models import (
-    BatchManifest,
-    ConsolidatedDossier,
-    ExtractedEntity,
-    ExtractedTable,
-    FileEntry,
-    WorkerResult,
-)
+import sys
+from pathlib import Path
+
+# Add current directory to path so shared package is importable in Azure wwwroot
+app_dir = Path(__file__).resolve().parent
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
+
+try:
+    from shared.ai_extractor import extract_document_ai
+    from shared.cosmos_client import persist_dossier
+    from shared.mock_extractor import extract_document_mock
+    from shared.models import (
+        BatchManifest,
+        ConsolidatedDossier,
+        ExtractedEntity,
+        ExtractedTable,
+        FileEntry,
+        WorkerResult,
+    )
+except ImportError:
+    from backend.shared.ai_extractor import extract_document_ai
+    from backend.shared.cosmos_client import persist_dossier
+    from backend.shared.mock_extractor import extract_document_mock
+    from backend.shared.models import (
+        BatchManifest,
+        ConsolidatedDossier,
+        ExtractedEntity,
+        ExtractedTable,
+        FileEntry,
+        WorkerResult,
+    )
 
 # Initialize the Durable Functions App (Python v2 Model)
 my_app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)

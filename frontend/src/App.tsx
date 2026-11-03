@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Activity, ShieldCheck } from 'lucide-react';
+import { Layers, AlertTriangle } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Dropzone } from './components/Dropzone';
 import { ConcurrencyMap } from './components/ConcurrencyMap';
 import { BenchmarkCard } from './components/BenchmarkCard';
@@ -19,6 +20,7 @@ export const App: React.FC = () => {
   const [runtimeStatus, setRuntimeStatus] = useState<'Idle' | 'Pending' | 'Running' | 'Completed' | 'Failed'>('Idle');
   const [dossier, setDossier] = useState<ConsolidatedDossier | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [isSimulation, setIsSimulation] = useState(false);
   const timerRef = useRef<number | null>(null);
 
   // Load 25 synthetic benchmark PDFs for 1-click viva testing
@@ -40,6 +42,7 @@ export const App: React.FC = () => {
     setSelectedFiles(dummyFileList);
     setFileDescriptors(syntheticFiles);
     setDossier(null);
+    setIsSimulation(false);
     setRuntimeStatus('Idle');
     setElapsedSeconds(0);
   };
@@ -53,6 +56,7 @@ export const App: React.FC = () => {
     }));
     setFileDescriptors(descriptors);
     setDossier(null);
+    setIsSimulation(false);
     setRuntimeStatus('Idle');
     setElapsedSeconds(0);
   };
@@ -78,6 +82,7 @@ export const App: React.FC = () => {
 
     setRuntimeStatus('Running');
     setElapsedSeconds(0);
+    setIsSimulation(false);
     const batchId = `batch-${Date.now()}`;
     const manifest: BatchManifest = {
       batch_id: batchId,
@@ -111,6 +116,7 @@ export const App: React.FC = () => {
       }
     } catch (err) {
       console.warn('Backend unavailable, running high-fidelity client simulation:', err);
+      setIsSimulation(true);
       // High-fidelity fallback client simulation for zero-dependency presentations!
       setTimeout(() => {
         const mockDocuments = fileDescriptors.map((f, i) => ({
@@ -171,56 +177,81 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div>
-      {/* Sticky Header */}
-      <header className="header-bar">
-        <div className="brand-wrapper">
-          <div className="brand-icon">
-            <Layers size={22} color="#ffffff" />
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          <div className="brand-mark">
+            <Layers size={19} />
           </div>
-          <div>
-            <div className="brand-title">ANTIGRAVITY DOSSIER ENGINE</div>
-            <div className="brand-tagline">Serverless Fan-Out / Fan-In Parallel Document Extraction</div>
+          <div className="brand-copy">
+            <div className="brand-name">Antigravity</div>
+            <div className="brand-subtitle">Document extraction operations</div>
           </div>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div className="badge-pill">
-            <Activity size={12} /> Target: Azure East Asia (Serverless)
-          </div>
-          <div className="badge-pill success">
-            <ShieldCheck size={12} /> Student Budget Guard Active (&lt; $0.50/mo)
-          </div>
+        <div className="environment">
+          <span className="live-dot" /> Azure East Asia · serverless
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="main-container">
-        {/* Row 1: Dropzone + Concurrency Map */}
-        <div className="dashboard-grid">
-          <Dropzone
+      <main className="workspace">
+        <div className="workspace-heading">
+          <div>
+            <div className="eyebrow">Batch operations</div>
+            <h1>Process a document batch</h1>
+            <p className="heading-description">Stage PDFs, observe fan-out execution, and inspect the reconciled result in one operational workspace.</p>
+          </div>
+          <div className="session-id">SYSTEM READY · v1.0</div>
+        </div>
+        <motion.div
+          className="dashboard-grid"
+          initial="hidden"
+          animate="visible"
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.09 } } }}
+        >
+          <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}>
+            <Dropzone
             files={selectedFiles}
             onFilesSelected={handleFilesSelected}
             onLoadBenchmarkFiles={handleLoadBenchmarkFiles}
             isProcessing={runtimeStatus === 'Running' || runtimeStatus === 'Pending'}
             onExecuteBatch={handleExecuteBatch}
-          />
-          <ConcurrencyMap
+            />
+          </motion.div>
+          <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35 } } }}>
+            <ConcurrencyMap
             files={fileDescriptors}
             runtimeStatus={runtimeStatus}
             elapsedSeconds={elapsedSeconds}
+            />
+          </motion.div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.35 }}>
+          <BenchmarkCard
+            totalFiles={fileDescriptors.length}
+            cloudDurationSec={dossier ? dossier.total_duration_ms / 1000 : elapsedSeconds}
+            speedupFactor={dossier ? dossier.parallel_speedup_factor : 0}
           />
-        </div>
+        </motion.div>
 
-        {/* Row 2: Comparative Performance Benchmark */}
-        <BenchmarkCard
-          totalFiles={fileDescriptors.length}
-          cloudDurationSec={dossier ? dossier.total_duration_ms / 1000 : elapsedSeconds}
-          speedupFactor={dossier ? dossier.parallel_speedup_factor : 0}
-        />
-
-        {/* Row 3: Synthesized Dossier View */}
-        {dossier && <DossierViewer dossier={dossier} />}
+        {isSimulation && (
+          <div className="demo-notice">
+            <AlertTriangle size={16} /> Backend unavailable: the result below is a clearly marked local simulation, not extracted production data.
+          </div>
+        )}
+        <AnimatePresence mode="wait">
+          {dossier && (
+            <motion.div
+              key={dossier.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+            >
+              <DossierViewer dossier={dossier} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

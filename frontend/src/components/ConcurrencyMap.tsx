@@ -1,106 +1,51 @@
 import React from 'react';
-import { Cpu, Server, CheckCircle, Clock } from 'lucide-react';
+import { CheckCircle2, Clock3, Cpu, Server } from 'lucide-react';
+import { motion } from 'motion/react';
 import { FileDescriptor } from '../services/azureApi';
 
-interface ConcurrencyMapProps {
-  files: FileDescriptor[];
-  runtimeStatus: 'Idle' | 'Pending' | 'Running' | 'Completed' | 'Failed';
-  elapsedSeconds: number;
-}
+interface ConcurrencyMapProps { files: FileDescriptor[]; runtimeStatus: 'Idle' | 'Pending' | 'Running' | 'Completed' | 'Failed'; elapsedSeconds: number; }
 
-export const ConcurrencyMap: React.FC<ConcurrencyMapProps> = ({
-  files,
-  runtimeStatus,
-  elapsedSeconds
-}) => {
-  const isRunning = runtimeStatus === 'Running';
+export const ConcurrencyMap: React.FC<ConcurrencyMapProps> = ({ files, runtimeStatus, elapsedSeconds }) => {
+  const isRunning = runtimeStatus === 'Running' || runtimeStatus === 'Pending';
   const isCompleted = runtimeStatus === 'Completed';
+  const statusClass = isRunning ? 'running' : isCompleted ? 'complete' : '';
+  const workerText = isCompleted ? 'Extracted' : isRunning ? 'Processing' : 'Queued';
 
   return (
-    <div className="glass-panel" style={{ padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+    <section className="panel telemetry-panel" aria-labelledby="telemetry-title">
+      <div className="panel-header">
         <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>2. Serverless Concurrency Map</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            Real-time Fan-Out worker scale-out telemetry
-          </p>
+          <div className="panel-kicker">02 · Execution</div>
+          <h2 id="telemetry-title" className="panel-title">Concurrency monitor</h2>
+          <p className="panel-description">Observe each document as the orchestration fans out work.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span className={`badge-pill ${isRunning ? 'warning' : isCompleted ? 'success' : ''}`}>
-            {isRunning && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-amber)', display: 'inline-block' }} />}
-            {isCompleted && <CheckCircle size={12} />}
-            Status: {runtimeStatus}
-          </span>
-          {runtimeStatus !== 'Idle' && (
-            <span className="badge-pill">
-              <Clock size={12} /> {elapsedSeconds.toFixed(1)}s
-            </span>
-          )}
-        </div>
+        <div className={`status-chip ${statusClass}`}><span className="status-dot" /> {runtimeStatus}</div>
       </div>
-
-      <div
-        style={{
-          background: 'rgba(15, 23, 42, 0.4)',
-          borderRadius: 'var(--radius-md)',
-          padding: '1.25rem',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '1.5rem'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <Server size={16} color="var(--accent-cyan)" />
-            <span>Active Serverless Workers:</span>
-            <b style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
-              {isRunning ? `${files.length} / ${files.length}` : isCompleted ? `${files.length} Done` : '0 Idle'}
-            </b>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Orchestrator: <span style={{ color: 'var(--accent-indigo)' }}>context.task_all()</span>
-          </div>
+      <div className="panel-body">
+        <div className="operator-summary">
+          <div className="operator-metric"><span className="metric-label">Workers</span><strong className="metric-value">{isRunning ? `${files.length}/${files.length}` : isCompleted ? `${files.length} done` : '0 active'}</strong></div>
+          <div className="operator-metric"><span className="metric-label">Elapsed</span><strong className="metric-value">{runtimeStatus === 'Idle' ? '—' : `${elapsedSeconds.toFixed(1)}s`}</strong></div>
+          <div className="operator-metric"><span className="metric-label">Pattern</span><strong className="metric-value">Fan-out</strong></div>
         </div>
 
-        {/* Dynamic Worker Grid */}
         {files.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <Cpu size={36} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-            <div>No active batch staged. Load or drop PDF files to trigger workers.</div>
-          </div>
+          <div className="empty-workers"><Cpu size={28} /><span>Workers appear here once a batch is staged.</span></div>
         ) : (
-          <div className="worker-matrix">
-            {files.map((file, idx) => {
-              const nodeClass = isCompleted ? 'completed' : isRunning ? 'running' : '';
-              return (
-                <div key={idx} className={`worker-node ${nodeClass}`}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>W#{idx + 1}</span>
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: isCompleted ? 'var(--accent-emerald)' : isRunning ? 'var(--accent-cyan)' : 'var(--text-muted)'
-                      }}
-                    />
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {file.file_name}
-                  </div>
-                  <div style={{ fontSize: '0.65rem', color: isCompleted ? 'var(--accent-emerald)' : isRunning ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>
-                    {isCompleted ? '✓ Extracted' : isRunning ? '⚡ Processing' : 'Staged'}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="worker-area">
+            <div className="worker-label"><span><Server size={13} /> Assigned workers</span><span>{isCompleted ? <CheckCircle2 size={13} /> : <Clock3 size={13} />} {workerText}</span></div>
+            <div className="worker-grid">
+              {files.map((file, index) => (
+                <motion.article key={file.file_name} className={`worker ${statusClass}`} initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: Math.min(index * .025, .45), duration: .24 }}>
+                  <div className="worker-top"><span>W-{String(index + 1).padStart(2, '0')}</span><span className="worker-indicator" /></div>
+                  <p className="worker-name" title={file.file_name}>{file.file_name}</p>
+                  <span className="worker-state">{workerText}</span>
+                </motion.article>
+              ))}
+            </div>
           </div>
         )}
       </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        <span>Pattern: Azure Durable Functions Fan-Out / Fan-In</span>
-        <span>Idle Container Cost: $0.00 / hr</span>
-      </div>
-    </div>
+      <footer className="panel-footer">Durable Functions · <code>context.task_all()</code> · Scale-to-zero workers</footer>
+    </section>
   );
 };

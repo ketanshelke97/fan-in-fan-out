@@ -11,6 +11,7 @@ import {
   startBatchOrchestration
 } from './services/azureApi';
 import { extractDocumentReal, reconcileDossier } from './services/realExtractor';
+import { saveDossierToCosmos } from './services/cosmosClient';
 import './styles/index.css';
 
 export const App: React.FC = () => {
@@ -118,6 +119,11 @@ Statutory Clause Title 15 Section ${i + 1} Audited. Total Penalty: $${(i + 1) * 
         extractedResults,
         parallelDurationMs
       );
+
+      // 4. AUTOMATIC REAL-TIME PERSISTENCE: Save directly to Cosmos DB indexed by batch_id
+      saveDossierToCosmos(synthesizedDossier).catch(e => {
+        console.warn('Background Cosmos DB sync note:', e);
+      });
 
       // Brief animation buffer so users see the Concurrency Map's parallel worker telemetry
       const displayDelay = Math.max(1600 - measuredWallClockMs, 200);

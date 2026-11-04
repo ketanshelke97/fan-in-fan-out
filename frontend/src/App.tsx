@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Activity, ShieldCheck } from 'lucide-react';
+import { Layers, Activity, ShieldCheck, Database } from 'lucide-react';
 import { Dropzone } from './components/Dropzone';
 import { ConcurrencyMap } from './components/ConcurrencyMap';
 import { BenchmarkCard } from './components/BenchmarkCard';
@@ -11,6 +11,7 @@ import {
   startBatchOrchestration
 } from './services/azureApi';
 import { extractDocumentReal, reconcileDossier } from './services/realExtractor';
+import { saveDossierToCosmos } from './services/cosmosClient';
 import './styles/index.css';
 
 export const App: React.FC = () => {
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
   const [fileDescriptors, setFileDescriptors] = useState<FileDescriptor[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<'Idle' | 'Pending' | 'Running' | 'Completed' | 'Failed'>('Idle');
   const [dossier, setDossier] = useState<ConsolidatedDossier | null>(null);
+  const [cosmosStatus, setCosmosStatus] = useState<'idle' | 'syncing' | 'synced' | 'failed'>('idle');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const timerRef = useRef<number | null>(null);
 
@@ -97,7 +99,11 @@ Statutory Clause Title 15 Section ${i + 1} Audited. Total Penalty: $${(i + 1) * 
     };
 
     // 1. Notify Azure Cloud Backend in background for Application Insights live metrics telemetry
-    startBatchOrchestration(manifest).catch(err => {
+    // Pass telemetry- prefix so background cloud orchestration doesn't overwrite real dossier in Cosmos DB
+    startBatchOrchestration({
+      ...manifest,
+      batch_id: `telemetry-${batchId}`
+    }).catch(err => {
       console.warn('Azure cloud background telemetry starter notice:', err);
     });
 
@@ -121,9 +127,17 @@ Statutory Clause Title 15 Section ${i + 1} Audited. Total Penalty: $${(i + 1) * 
 
       // Brief animation buffer so users see the Concurrency Map's parallel worker telemetry
       const displayDelay = Math.max(1600 - measuredWallClockMs, 200);
-      setTimeout(() => {
+      setTimeout(async () => {
         setRuntimeStatus('Completed');
         setDossier(synthesizedDossier);
+        setCosmosStatus('syncing');
+        try {
+          const success = await saveDossierToCosmos(synthesizedDossier);
+          setCosmosStatus(success ? 'synced' : 'failed');
+        } catch (e) {
+          console.warn('Cosmos sync error:', e);
+          setCosmosStatus('failed');
+        }
       }, displayDelay);
     } catch (err) {
       console.error('Real Fan-In batch execution failure:', err);
@@ -152,6 +166,16 @@ Statutory Clause Title 15 Section ${i + 1} Audited. Total Penalty: $${(i + 1) * 
           <div className="badge-pill success">
             <ShieldCheck size={12} /> Student Budget Guard Active (&lt; $0.50/mo)
           </div>
+          {cosmosStatus === 'syncing' && (
+            <div className="badge-pill" style={{ borderColor: '#3b82f6', color: '#60a5fa' }}>
+              <Database size={12} /> Cosmos DB: Syncing...
+            </div>
+          )}
+          {cosmosStatus === 'synced' && (
+            <div className="badge-pill success">
+              <Database size={12} /> Cosmos DB: Synced (Real-Time)
+            </div>
+          )}
         </div>
       </header>
 

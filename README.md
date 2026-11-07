@@ -45,61 +45,54 @@ The **Antigravity Dossier Engine** re-engineers document extraction around an ev
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["Frontend Client (Azure Static Web Apps)"]
-        UI["React + Vite Single-Page Application"]
-        Dropzone["Batch Dropzone & File Ingestion"]
+    subgraph ClientLayer["Frontend Client Layer (Azure Static Web Apps)"]
+        UI["React Dashboard UI"]
+        Dropzone["Batch Document Dropzone"]
         WorkerMap["Real-Time Concurrency Map"]
         DossierView["Synthesized Dossier Viewer"]
+        AuthModule["WebCrypto Native Auth (HMAC-SHA256)"]
     end
 
-    subgraph Ingestion["Ingestion & Staging"]
-        BlobIn["Azure Blob Storage<br/>(Container: incoming-batches)"]
-        AuthModule["WebCrypto Native Auth<br/>(HMAC-SHA256)"]
+    subgraph Ingestion["Ingestion and Staging"]
+        BlobIn["Azure Blob Storage (incoming-batches)"]
+        BlobOut["Azure Blob Storage (processed-dossiers)"]
     end
 
-    subgraph ServerlessCompute["Azure Durable Functions (Python v2 Model)"]
-        Starter["http_batch_starter<br/>(HTTP Trigger / Manifest Validator)"]
-        Orchestrator["document_batch_orchestrator<br/>(Durable Orchestration Engine)"]
-        
-        subgraph FanOutWorkers["Distributed Fan-Out Worker Pool"]
-            W1["Worker #1<br/>extract_document_worker"]
-            W2["Worker #2<br/>extract_document_worker"]
-            W3["Worker #3<br/>extract_document_worker"]
-            WN["Worker #N<br/>extract_document_worker"]
-        end
-        
-        Aggregator["consolidate_and_index_dossier<br/>(Fan-In Aggregator Activity)"]
+    subgraph ServerlessCompute["Azure Durable Functions (Python v2)"]
+        Starter["http_batch_starter (HTTP Trigger)"]
+        Orchestrator["document_batch_orchestrator (Durable Orchestrator)"]
+        W1["Worker 1 (extract_document_worker)"]
+        W2["Worker 2 (extract_document_worker)"]
+        WN["Worker N (extract_document_worker)"]
+        Aggregator["consolidate_and_index_dossier (Fan-In Aggregator)"]
     end
 
-    subgraph DataStore["Distributed Cloud Data & Monitoring"]
-        Cosmos["Azure Cosmos DB Serverless<br/>(DB: DocumentIntelligenceDB | Container: Dossiers)"]
-        AppInsights["Azure Application Insights<br/>(Distributed Tracing & Live Metrics)"]
-        BlobOut["Azure Blob Storage<br/>(Container: processed-dossiers)"]
+    subgraph DataStore["Distributed Cloud Data and Monitoring"]
+        Cosmos[("Azure Cosmos DB Serverless")]
+        AppInsights["Azure Application Insights"]
     end
 
     UI --> Dropzone
-    Dropzone --> BlobIn
-    Dropzone --> Starter
-    Starter --> Orchestrator
-    
-    Orchestrator -.->|Fan-Out: Parallel Tasks| W1
-    Orchestrator -.->|Fan-Out: Parallel Tasks| W2
-    Orchestrator -.->|Fan-Out: Parallel Tasks| W3
-    Orchestrator -.->|Fan-Out: Parallel Tasks| WN
+    Dropzone -->|"1. Stage Blobs"| BlobIn
+    Dropzone -->|"2. Submit Manifest"| Starter
+    Starter -->|"3. Start Orchestration"| Orchestrator
 
-    W1 -.->|Task Resolution| Aggregator
-    W2 -.->|Task Resolution| Aggregator
-    W3 -.->|Task Resolution| Aggregator
-    WN -.->|Task Resolution| Aggregator
+    Orchestrator -->|"Fan-Out Tasks"| W1
+    Orchestrator -->|"Fan-Out Tasks"| W2
+    Orchestrator -->|"Fan-Out Tasks"| WN
 
-    Aggregator --> Cosmos
-    Aggregator --> BlobOut
-    ServerlessCompute --> AppInsights
-    
-    UI --> AuthModule
-    AuthModule -->|Direct REST Sync| Cosmos
-    UI --> WorkerMap
-    UI --> DossierView
+    W1 -->|"Task Result"| Aggregator
+    W2 -->|"Task Result"| Aggregator
+    WN -->|"Task Result"| Aggregator
+
+    Aggregator -->|"Persist Dossier"| Cosmos
+    Aggregator -->|"Archive JSON"| BlobOut
+    Orchestrator -.->|"Telemetry Stream"| AppInsights
+
+    Dropzone -->|"Parallel Processing"| WorkerMap
+    WorkerMap --> DossierView
+    DossierView -->|"Direct Cloud Sync"| AuthModule
+    AuthModule -->|"Signed REST Upsert"| Cosmos
 ```
 
 ---
